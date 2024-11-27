@@ -23,15 +23,15 @@ def asignar_amigo_secreto(participantes):
 
 # Crear los enlaces personalizados
 def crear_enlaces(asignaciones):
-    base_url = "http://127.0.0.1:5000/reveal"
+    base_url = "https://innacroft.pythonanywhere.com"
     enlaces = {}
     enlaces_show = {}
     
     for participante, amigo in asignaciones.items():
         token = ''.join(random.choices(string.ascii_letters + string.digits, k=8))  # Generar un token único
-        link = f"{base_url}?token={token}"
+        link = f"{base_url}/reveal?token={token}"
         enlaces[token] = {"participante": participante, "amigo": amigo, "usado": False}
-        enlaces_show[participante] = link
+        enlaces_show[participante] = f"Entra aqui para revelar tu amigo navideño: {link}"
         # Guardar las asignaciones y los enlaces en un archivo JSON para referencia
     with open("amigos_secreto.json", "w") as file:
         json.dump(enlaces, file, indent=4)
