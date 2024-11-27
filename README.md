@@ -1,4 +1,5 @@
 # Secret Santa Assignment Script
+🎅🎁
 
 This script is a simple **Secret Santa assignment tool** built using Python and Flask. It allows users to submit participants' names via a web form, automatically assigns each participant a "Secret Santa," and generates unique tokens to reveal the assignments.
 
@@ -16,12 +17,8 @@ This script is a simple **Secret Santa assignment tool** built using Python and 
 - **disable_all**: Disable all secret reveals.
 - **activate_all**: Activate all secret reveals.
  
+![Web Form Screenshot](Revelation.PNG)
+
 ## Requirements
 - Python 3.x
 - Flask library
-
-## Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-repo/secret-santa
-   cd secret-santa
