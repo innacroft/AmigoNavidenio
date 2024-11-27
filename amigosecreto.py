@@ -7,136 +7,125 @@ from flask import Flask, jsonify, render_template, request
 
 app = Flask(__name__)
 URL = "https://innacroft.pythonanywhere.com"
-participantes = ["Ingrid", "Julian", "Yuly", "Andres", "Esteban", "Lina", "Lino", "Yudy"]
 
-@app.route('/agregar', methods=['GET', 'POST'])
-def agregar():
+@app.route('/add_participants', methods=['GET', 'POST'])
+def add_participants():
     if request.method == 'POST':
-        participantes = request.form.get('participantes')
+        participants = request.form.get('participants')
 
-        if not participantes:
-            return jsonify({"error": "No se enviaron participantes."}), 400
+        if not participants:
+            return jsonify({"error": "Participants were not sent."}), 400
 
-        participantes = [p.strip() for p in participantes.split(',') if p.strip()]
+        participants = [p.strip() for p in participants.split(',') if p.strip()]
 
-        asignaciones = asignar_amigo_secreto(participantes)
-        enlaces_personalizados = crear_enlaces(asignaciones)
-        return enlaces_personalizados
+        asignations = assign_secret_friend(participants)
+        custom_urls = create_links(asignations)
+        return custom_urls
 
     return '''
         <form method="post">
-        <label for="participantes">Participantes (separados por comas):</label><br>
-        <textarea name="participantes" rows="4" cols="50"></textarea><br>
-        <button type="submit">Asignar automáticamente</button>
+        <label for="participants">Participants (Separated by commas):</label><br>
+        <textarea name="participants" rows="4" cols="50"></textarea><br>
+        <button type="submit">START</button>
     </form>
     '''
 
-def asignar_amigo_secreto(participantes):
-    amigos = participantes[:]
-    random.shuffle(amigos)
+def assign_secret_friend(participants):
+    friends = participants[:]
+    random.shuffle(friends)
     
-    while any(p == a for p, a in zip(participantes, amigos)):
-        random.shuffle(amigos)
+    while any(p == a for p, a in zip(participants, friends)):
+        random.shuffle(friends)
     
-    return dict(zip(participantes, amigos))
+    return dict(zip(participants, friends))
 
-def crear_enlaces(asignaciones):
+def create_links(asignations):
     
     enlaces = {}
     enlaces_show = {}
     
-    for participante, amigo in asignaciones.items():
+    for participant, friend in asignations.items():
         token = ''.join(random.choices(string.ascii_letters + string.digits, k=8))  # Generar un token único
         link = f"{URL}/reveal?token={token}"
-        enlaces[token] = {"participante": participante, "amigo": amigo, "usado": False}
-        enlaces_show[participante] = f"Entra aqui para revelar tu amigo navideño: {link}"
-    with open("amigos_secreto.json", "w") as file:
+        enlaces[token] = {"participant": participant, "friend": friend, "used": False}
+        enlaces_show[participant] = f"Click here to reveal your christmas friend: {link}"
+    with open("friends_secret.json", "w") as file:
         json.dump(enlaces, file, indent=4)
     return enlaces_show
 
-@app.route("/assign", methods=["GET"])
-def assign():
-    asignaciones = asignar_amigo_secreto(participantes)
-    enlaces_personalizados = crear_enlaces(asignaciones)
-    print(enlaces_personalizados)
-    return enlaces_personalizados
-
-
-
-# Ruta para revelar el amigo secreto
 @app.route("/reveal", methods=["GET"])
 def reveal():
     token = request.args.get("token")
     
     if not token:
-        return "<h1>Token no proporcionado</h1><p>Por favor, asegúrate de tener un enlace válido.</p>", 400
+        return "<h1>Token is not found</h1><p>Please make sure you have the correct link.</p>", 400
     
     try:
-        with open("amigos_secreto.json", "r") as file:
+        with open("friends_secret.json", "r") as file:
             enlaces = json.load(file)
     except FileNotFoundError:
-        return "<h1>Error al cargar el archivo de asignaciones</h1><p>No se ha encontrado el archivo de amigos secretos.</p>", 500
+        return "<h1>Error loading asignations</h1><p>Not found assignations file.</p>", 500
     
     if token not in enlaces:
-        return "<h1>Enlace inválido</h1><p>El token proporcionado no es válido.</p>", 404
+        return "<h1>Invalid linko</h1><p>Token is not valid.</p>", 404
     
-    if enlaces[token].get("usado", True):
-        return "<h1>Este enlace ya ha sido usado.</h1><p>El enlace ya no es válido.</p>", 404
+    if enlaces[token].get("used", True):
+        return "<h1>This link has been already used</h1><p>This link is not valid anymore.</p>", 404
     
-    amigo = enlaces[token]["amigo"]
-    participante = enlaces[token]["participante"]
+    friend = enlaces[token]["friend"]
+    participant = enlaces[token]["participant"]
     
-    enlaces[token]["usado"] = True
+    enlaces[token]["used"] = True
     try:
-        with open("amigos_secreto.json", "w") as file:
+        with open("friends_secret.json", "w") as file:
             json.dump(enlaces, file, indent=4)
     except IOError:
-        return "<h1>Error al guardar el estado</h1><p>No se pudo actualizar el archivo de asignaciones.</p>", 500
+        return "<h1>Error saving status</h1><p>Cannot update assignations file.</p>", 500
     
-    return render_template("revelacion.html", amigo_secreto=amigo, participante=participante)
+    return render_template("revelation.html", secret_friend=friend, participant=participant)
 
 
 @app.route("/get_info", methods=["GET"])
 def get_info():
-    with open("amigos_secreto.json", "r") as file:
+    with open("friends_secret.json", "r") as file:
         enlaces = json.load(file)
         all_info=[]
         for key, values in enlaces.items():
             new_dict={}
             token_key=key
-            participante=values.get('participante')
-            usado=values.get('usado')
-            new_dict[participante]={f"{URL}/reveal?token={token_key}": 'usado' if usado else 'sin usar'  }
+            participant=values.get('participant')
+            used=values.get('used')
+            new_dict[participant]={f"{URL}/reveal?token={token_key}": 'used' if used else 'not used'  }
             all_info.append(new_dict)
     return {'all':all_info}
 
 
 @app.route("/disable_all", methods=["GET"])
 def disable_all():
-    with open("amigos_secreto.json", "r") as file:
+    with open("friends_secret.json", "r") as file:
         enlaces = json.load(file)
 
     for token in enlaces:
-        enlaces[token]["usado"] = True
+        enlaces[token]["used"] = True
 
-    with open("amigos_secreto.json", "w") as file:
+    with open("friends_secret.json", "w") as file:
         json.dump(enlaces, file, indent=4)
 
-    return{"info":"Todos los tokens han sido deshabilitados."}
+    return{"info":"All tokens were been disabled"}
 
 
 @app.route("/activate_all", methods=["GET"])
 def activate_all():
-    with open("amigos_secreto.json", "r") as file:
+    with open("friends_secret.json", "r") as file:
         enlaces = json.load(file) 
 
     for token in enlaces:
-        enlaces[token]["usado"] = False
+        enlaces[token]["used"] = False
 
-    with open("amigos_secreto.json", "w") as file:
+    with open("friends_secret.json", "w") as file:
         json.dump(enlaces, file, indent=4)
 
-    return{"info":"Todos los tokens han sido activados."}
+    return{"info":"All tokens were been activated"}
 
 
 if __name__ == "__main__":
