@@ -2,13 +2,34 @@ import random
 import string
 import json
 
-from flask import Flask, render_template, request
+from flask import Flask, jsonify, render_template, request
 
 
 app = Flask(__name__)
 URL = "https://innacroft.pythonanywhere.com"
 participantes = ["Ingrid", "Julian", "Yuly", "Andres", "Esteban", "Lina", "Lino", "Yudy"]
 
+@app.route('/agregar', methods=['GET', 'POST'])
+def agregar():
+    if request.method == 'POST':
+        participantes = request.form.get('participantes')
+
+        if not participantes:
+            return jsonify({"error": "No se enviaron participantes."}), 400
+
+        participantes = [p.strip() for p in participantes.split(',') if p.strip()]
+
+        asignaciones = asignar_amigo_secreto(participantes)
+        enlaces_personalizados = crear_enlaces(asignaciones)
+        return enlaces_personalizados
+
+    return '''
+        <form method="post">
+        <label for="participantes">Participantes (separados por comas):</label><br>
+        <textarea name="participantes" rows="4" cols="50"></textarea><br>
+        <button type="submit">Asignar automáticamente</button>
+    </form>
+    '''
 
 def asignar_amigo_secreto(participantes):
     amigos = participantes[:]
@@ -59,7 +80,7 @@ def reveal():
     if token not in enlaces:
         return "<h1>Enlace inválido</h1><p>El token proporcionado no es válido.</p>", 404
     
-    if enlaces[token].get("usado", False):
+    if enlaces[token].get("usado", True):
         return "<h1>Este enlace ya ha sido usado.</h1><p>El enlace ya no es válido.</p>", 404
     
     amigo = enlaces[token]["amigo"]
